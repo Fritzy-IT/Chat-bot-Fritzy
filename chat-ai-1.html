@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fritzy.Ai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            /* Animated gradient background */
+            background: linear-gradient(-45deg, #1f421f, #346a34, #173317, #1f421f);
+            background-size: 400% 400%;
+            animation: animateGradient 15s ease infinite;
+        }
+
+        @keyframes animateGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes color-change {
+            0% {
+                color: white;
+            }
+            50% {
+                color: #84cc16;
+            }
+            100% {
+                color: white;
+            }
+        }
+        
+        @keyframes bounce-loading {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* --- Scrollbar Styling --- */
+        /* For WebKit browsers (Chrome, Safari, etc.) */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        /* For Firefox */
+        .chat-messages {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        .auth-card {
+            z-index: 2;
+            backdrop-filter: blur(20px);
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .auth-card:hover {
+            transform: translateY(-5px);
+        }
+        .message-box {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .message-box.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .button-gradient {
+            background-image: linear-gradient(to right, #65a30d 0%, #84cc16 51%, #65a30d 100%);
+            transition: 0.5s;
+            background-size: 200% auto;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-gradient:hover {
+            background-position: right center;
+        }
+
+        /* Chat styles */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .user-message {
+            background-color: rgba(132, 204, 22, 0.6);
+            align-self: flex-end;
+            border-radius: 16px 16px 0 16px;
+            padding: 1rem 1.25rem;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .ai-message {
+            background-color: rgba(255, 255, 255, 0.2);
+            align-self: flex-start;
+            border-radius: 16px 16px 16px 0;
+            padding: 1rem 1.25rem;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #e0e7ff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .ai-message ol, .ai-message ul {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .ai-message li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- The authentication card (Login/Register forms) -->
+    <div id="authCard" class="auth-card p-10 rounded-2xl shadow-xl max-w-sm w-full">
+        <div class="flex flex-col items-center mb-8">
+            <svg class="w-20 h-20 text-white animate-pulse" style="animation: color-change 4s ease infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <h1 class="text-4xl font-extrabold text-white mt-4" style="animation: color-change 4s ease infinite;">Fritzy.Ai</h1>
+        </div>
+
+        <div id="message-box" class="message-box hidden"></div>
+
+        <!-- Login Form Container -->
+        <div id="loginContainer">
+            <h2 class="text-2xl font-bold text-white text-center mb-6">Log In to Your Account</h2>
+            <form id="loginForm">
+                <div class="mb-4 relative">
+                    <label for="email" class="block text-white font-medium mb-2">Email Address</label>
+                    <div class="absolute inset-y-0 left-0 top-6 pl-4 flex items-center">
+                        <svg class="h-6 w-6 text-white peer-focus:text-lime-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26c.2.14.44.21.68.21s.48-.07.68-.21L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <input type="email" id="loginEmail" class="w-full pl-12 pr-5 py-3 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white transition duration-200 bg-transparent text-white placeholder-gray-200 hover:border-lime-400 peer" placeholder="yourname@example.com" required>
+                </div>
+                <div class="mb-6 relative">
+                    <label for="password" class="block text-white font-medium mb-2">Password</label>
+                    <div class="absolute inset-y-0 left-0 top-6 pl-4 flex items-center">
+                        <svg class="h-6 w-6 text-white peer-focus:text-lime-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c.966 0 1.75-.784 1.75-1.75S12.966 7.5 12 7.5s-1.75.784-1.75 1.75S11.034 11 12 11zm0 0v-4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4M12 15a.5.5 0 110-1 .5.5 0 010 1z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16a6 6 0 110-12 6 6 0 010 12z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16a6 6 0 110-12 6 6 0 010 12z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4M12 16a6 6 0 110-12 6 6 0 010 12z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                        </svg>
+                    </div>
+                    <input type="password" id="loginPassword" class="w-full pl-12 pr-12 py-3 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white transition duration-200 bg-transparent text-white placeholder-gray-200 hover:border-lime-400 peer" placeholder="••••••••" required>
+                    <span id="loginTogglePassword" class="absolute inset-y-0 right-0 top-6 pr-4 flex items-center cursor-pointer">
+                        <svg id="loginEyeOpen" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg id="loginEyeClosed" class="h-6 w-6 text-white hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.25a10.05 10.05 0 01-3.75 0" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 12l2-2m-2 2l2 2m-2-2l-2-2m2 2l-2 2" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit" class="w-full button-gradient font-semibold py-3 px-4 rounded-lg">
+                    Log In
+                </button>
+                <div class="mt-4 text-center text-sm">
+                    <a href="#" id="showRegisterLink" class="text-white hover:underline hover:text-lime-400 transition-colors duration-200">Don't have an account? Register</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Registration Form Container -->
+        <div id="registerContainer" class="hidden">
+            <h2 class="text-2xl font-bold text-white text-center mb-6">Register a New Account</h2>
+            <form id="registerForm">
+                <div class="mb-4 relative">
+                    <label for="username" class="block text-white font-medium mb-2">Username</label>
+                    <div class="absolute inset-y-0 left-0 top-6 pl-4 flex items-center">
+                        <svg class="h-6 w-6 text-white peer-focus:text-lime-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" id="registerUsername" class="w-full pl-12 pr-5 py-3 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white transition duration-200 bg-transparent text-white placeholder-gray-200 hover:border-lime-400 peer" placeholder="Choose a username" required>
+                </div>
+                <div class="mb-4 relative">
+                    <label for="email" class="block text-white font-medium mb-2">Email Address</label>
+                    <div class="absolute inset-y-0 left-0 top-6 pl-4 flex items-center">
+                        <svg class="h-6 w-6 text-white peer-focus:text-lime-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26c.2.14.44.21.68.21s.48-.07.68-.21L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <input type="email" id="registerEmail" class="w-full pl-12 pr-5 py-3 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white transition duration-200 bg-transparent text-white placeholder-gray-200 hover:border-lime-400 peer" placeholder="yourname@example.com" required>
+                </div>
+                <div class="mb-6 relative">
+                    <label for="password" class="block text-white font-medium mb-2">Password</label>
+                    <div class="absolute inset-y-0 left-0 top-6 pl-4 flex items-center">
+                        <svg class="h-6 w-6 text-white peer-focus:text-lime-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c.966 0 1.75-.784 1.75-1.75S12.966 7.5 12 7.5s-1.75.784-1.75 1.75S11.034 11 12 11zm0 0v-4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4M12 15a.5.5 0 110-1 .5.5 0 010 1z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16a6 6 0 110-12 6 6 0 010 12z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16a6 6 0 110-12 6 6 0 010 12z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v4M12 16a6 6 0 110-12 6 6 0 010 12z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                        </svg>
+                    </div>
+                    <input type="password" id="registerPassword" class="w-full pl-12 pr-12 py-3 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white transition duration-200 bg-transparent text-white placeholder-gray-200 hover:border-lime-400 peer" placeholder="••••••••" required>
+                    <span id="registerTogglePassword" class="absolute inset-y-0 right-0 top-6 pr-4 flex items-center cursor-pointer">
+                        <svg id="registerEyeOpen" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg id="registerEyeClosed" class="h-6 w-6 text-white hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.25a10.05 10.05 0 01-3.75 0" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 12l2-2m-2 2l2 2m-2-2l-2-2m2 2l-2 2" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit" class="w-full button-gradient font-semibold py-3 px-4 rounded-lg">
+                    Create Account
+                </button>
+                <div class="mt-4 text-center text-sm">
+                    <a href="#" id="showLoginLink" class="text-white hover:underline hover:text-lime-400 transition-colors duration-200">Already have an account? Log In</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application Dashboard -->
+    <div id="mainAppContainer" class="hidden w-full max-w-2xl p-6">
+        <div class="flex items-center justify-between mb-8 header-controls">
+            <h1 id="greeting" class="text-4xl font-extrabold text-white" style="animation: color-change 4s ease infinite;">Hello, User!</h1>
+            <div class="flex items-center space-x-4">
+                <button id="logoutButton" class="button-gradient font-semibold py-2 px-4 rounded-lg">
+                    Log Out
+                </button>
+            </div>
+        </div>
+        
+        <div id="appGrid" class="flex items-center justify-center h-[80vh]">
+            <!-- AI Chat Panel -->
+            <div class="bg-white/10 p-4 rounded-xl border border-white/20 flex flex-col h-full shadow-xl w-full">
+                <div class="flex items-center mb-4">
+                    <svg class="w-8 h-8 text-white mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z" fill="currentColor"/>
+                        <path d="M12 8a2 2 0 100-4 2 2 0 000 4zM12 16a2 2 0 100-4 2 2 0 000 4z" fill="currentColor"/>
+                    </svg>
+                    <h2 class="text-2xl font-bold text-white">Fritzy Chat</h2>
+                </div>
+                <div id="chatMessages" class="chat-messages flex-grow overflow-y-auto">
+                    <!-- Chat messages will be appended here -->
+                </div>
+                <div class="mt-4 flex">
+                    <input type="text" id="chatInput" class="chat-input flex-grow p-3 text-white bg-white/20 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-white transition duration-200" placeholder="Ask me anything...">
+                    <button id="sendChatButton" class="button-gradient font-semibold py-3 px-4 rounded-r-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase configuration
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Sign in with custom token if available, otherwise sign in anonymously
+        async function authenticate() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Signed in with custom token.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Signed in anonymously.");
+                }
+            } catch (error) {
+                console.error("Authentication error:", error);
+            }
+        }
+        authenticate();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get form and container elements
+            const authCard = document.getElementById('authCard');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const loginContainer = document.getElementById('loginContainer');
+            const registerContainer = document.getElementById('registerContainer');
+            const messageBox = document.getElementById('message-box');
+            const mainAppContainer = document.getElementById('mainAppContainer');
+            const logoutButton = document.getElementById('logoutButton');
+
+            // Get login form elements
+            const loginEmailInput = document.getElementById('loginEmail');
+            const loginPasswordInput = document.getElementById('loginPassword');
+            const loginTogglePassword = document.getElementById('loginTogglePassword');
+            const loginEyeOpen = document.getElementById('loginEyeOpen');
+            const loginEyeClosed = document.getElementById('loginEyeClosed');
+
+            // Get register form elements
+            const registerUsernameInput = document.getElementById('registerUsername');
+            const registerEmailInput = document.getElementById('registerEmail');
+            const registerPasswordInput = document.getElementById('registerPassword');
+            const registerTogglePassword = document.getElementById('registerTogglePassword');
+            const registerEyeOpen = document.getElementById('registerEyeOpen');
+            const registerEyeClosed = document.getElementById('registerEyeClosed');
+
+            // Get link elements
+            const showRegisterLink = document.getElementById('showRegisterLink');
+            const showLoginLink = document.getElementById('showLoginLink');
+            
+            // Get main app elements
+            const greeting = document.getElementById('greeting');
+
+            // AI Chat Elements
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendChatButton = document.getElementById('sendChatButton');
+
+            // Function to toggle between login and register forms
+            function toggleForm(formToShow) {
+                if (formToShow === 'login') {
+                    loginContainer.classList.remove('hidden');
+                    registerContainer.classList.add('hidden');
+                } else {
+                    loginContainer.classList.add('hidden');
+                    registerContainer.classList.remove('hidden');
+                }
+                // Clear any previous messages
+                messageBox.classList.add('hidden');
+                messageBox.classList.remove('success', 'error');
+            }
+
+            // Function to show the main application dashboard
+            async function showMainApp(user) {
+                authCard.classList.add('hidden');
+                mainAppContainer.classList.remove('hidden');
+                
+                const docRef = doc(db, `/artifacts/${appId}/users/${user.uid}/profile`, "data");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    greeting.textContent = `Hello, ${userData.username}!`;
+                } else {
+                    console.log("No user data found.");
+                    greeting.textContent = `Hello, User!`;
+                }
+            }
+            
+            // Function to show the authentication forms
+            function showAuthForms() {
+                mainAppContainer.classList.add('hidden');
+                authCard.classList.remove('hidden');
+                toggleForm('login');
+            }
+
+            // Listen for changes in authentication state
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // User is signed in.
+                    showMainApp(user);
+                } else {
+                    // User is signed out.
+                    showAuthForms();
+                }
+            });
+
+            // Add event listeners for switching forms
+            showRegisterLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                toggleForm('register');
+            });
+            showLoginLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                toggleForm('login');
+            });
+
+            // Add logout event listener
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    showMessage('Logged out successfully.', 'success');
+                } catch (error) {
+                    console.error("Logout error:", error);
+                    showMessage('Failed to log out.', 'error');
+                }
+            });
+
+            // Function to show a message in the message box
+            function showMessage(message, type) {
+                messageBox.textContent = message;
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add(type);
+            }
+
+            // Password visibility toggle logic for both forms
+            function setupPasswordToggle(toggleButton, passwordInput, eyeOpen, eyeClosed) {
+                toggleButton.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    eyeOpen.classList.toggle('hidden');
+                    eyeClosed.classList.toggle('hidden');
+                });
+            }
+            setupPasswordToggle(loginTogglePassword, loginPasswordInput, loginEyeOpen, loginEyeClosed);
+            setupPasswordToggle(registerTogglePassword, registerPasswordInput, registerEyeOpen, registerEyeClosed);
+
+            // Handle login form submission
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                messageBox.classList.add('hidden');
+                const email = loginEmailInput.value.trim();
+                const password = loginPasswordInput.value.trim();
+
+                if (!email || !password) {
+                    showMessage('Please fill in both fields.', 'error');
+                    return;
+                }
+
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showMessage('Login successful! Redirecting...', 'success');
+                } catch (error) {
+                    let errorMessage = 'An unknown error occurred. Please try again.';
+                    switch(error.code) {
+                        case 'auth/invalid-email':
+                        case 'auth/user-not-found':
+                        case 'auth/wrong-password':
+                            errorMessage = 'Invalid email or password.';
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMessage = 'Too many login attempts. Please try again later.';
+                            break;
+                        default:
+                            errorMessage = error.message;
+                            break;
+                    }
+                    showMessage(errorMessage, 'error');
+                }
+            });
+
+            // Handle registration form submission
+            registerForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                messageBox.classList.add('hidden');
+                const username = registerUsernameInput.value.trim();
+                const email = registerEmailInput.value.trim();
+                const password = registerPasswordInput.value.trim();
+
+                if (!username || !email || !password) {
+                    showMessage('Please fill in all fields.', 'error');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showMessage('Password should be at least 6 characters long.', 'error');
+                    return;
+                }
+
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    const docRef = doc(db, `/artifacts/${appId}/users/${user.uid}/profile`, "data");
+                    await setDoc(docRef, { username: username, email: user.email, userId: user.uid });
+                    
+                    showMessage('Account created successfully!', 'success');
+                    
+                    // Clear the form and show the login form after a successful registration
+                    registerForm.reset();
+                    toggleForm('login');
+
+                } catch (error) {
+                    let errorMessage = 'An unknown error occurred. Please try again.';
+                    switch(error.code) {
+                        case 'auth/email-already-in-use':
+                            errorMessage = 'This email is already in use. Please use a different one or log in.';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = 'Invalid email address.';
+                            break;
+                        case 'auth/weak-password':
+                            errorMessage = 'The password is too weak. Please choose a stronger one.';
+                            break;
+                        default:
+                            errorMessage = error.message;
+                            break;
+                    }
+                    showMessage(errorMessage, 'error');
+                }
+            });
+
+            // Handle AI chat message sending
+            sendChatButton.addEventListener('click', async () => {
+                const userMessage = chatInput.value.trim();
+                if (!userMessage) return;
+
+                // Display user message
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'user-message';
+                userMessageDiv.textContent = userMessage;
+                chatMessages.appendChild(userMessageDiv);
+                chatInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Show a simple loading indicator
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'ai-message flex justify-center items-center';
+                loadingDiv.innerHTML = `
+                    <div class="w-3 h-3 rounded-full bg-white mx-1 animate-[bounce-loading_0.8s_infinite]" style="animation-delay: -0.2s;"></div>
+                    <div class="w-3 h-3 rounded-full bg-white mx-1 animate-[bounce-loading_0.8s_infinite]" style="animation-delay: 0s;"></div>
+                    <div class="w-3 h-3 rounded-full bg-white mx-1 animate-[bounce-loading_0.8s_infinite]" style="animation-delay: 0.2s;"></div>
+                `;
+                chatMessages.appendChild(loadingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                try {
+                    const prompt = userMessage;
+                    
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                    };
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const result = await response.json();
+                    let generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    // Remove loading indicator
+                    chatMessages.removeChild(loadingDiv);
+
+                    if (generatedText) {
+                        const aiMessageDiv = document.createElement('div');
+                        aiMessageDiv.className = 'ai-message';
+                        
+                        // Check for structured content like "Step 1" and format it
+                        if (generatedText.match(/^(?:step|Step)\s\d+:/) || generatedText.includes('- ')) {
+                            let formattedContent = '<b>Content:</b><ol class="list-decimal ml-5 mt-2">';
+                            const lines = generatedText.split('\n');
+                            lines.forEach(line => {
+                                if (line.trim().length > 0) {
+                                    // Remove "Step 1: " or "- " and add a list item
+                                    let cleanLine = line.replace(/^(?:step|Step)\s\d+:\s*|^-*\s*/, '');
+                                    formattedContent += `<li>${cleanLine.trim()}</li>`;
+                                }
+                            });
+                            formattedContent += '</ol>';
+                            aiMessageDiv.innerHTML = formattedContent;
+                        } else {
+                            // If no structured content, just set the text
+                            aiMessageDiv.textContent = generatedText;
+                        }
+                        
+                        chatMessages.appendChild(aiMessageDiv);
+                    } else {
+                        const errorMessageDiv = document.createElement('div');
+                        errorMessageDiv.className = 'ai-message text-red-400';
+                        errorMessageDiv.textContent = 'Sorry, I couldn\'t generate a response. Please try again.';
+                        chatMessages.appendChild(errorMessageDiv);
+                    }
+                } catch (error) {
+                    console.error('Chat AI generation error:', error);
+                    // Remove loading indicator and show an error message
+                    chatMessages.removeChild(loadingDiv);
+                    const errorMessageDiv = document.createElement('div');
+                    errorMessageDiv.className = 'ai-message text-red-400';
+                    errorMessageDiv.textContent = 'An error occurred. Please check your network and try again.';
+                    chatMessages.appendChild(errorMessageDiv);
+                } finally {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            });
+
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendChatButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
